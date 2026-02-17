@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ultra HD Colored Text Portrait - Sorry</title>
+<style>
+body {
+  margin:0;
+  padding:0;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  font-family:monospace;
+  overflow:auto; /* allow scrolling and zoom */
+}
+#portrait {
+  transform-origin: top left;
+}
+.line {
+  white-space: nowrap;
+  line-height: 1;
+  font-size: 12px; /* bigger font so zoom works */
+}
+@media screen and (max-width:600px){
+  .line {
+    font-size: 6px; /* smaller for phones */
+}
+}
+</style>
+</head>
+<body>
+
+<div id="portrait"></div>
+
+<script>
+const imageSrc = "ok.png"; // your image link
+const text = "SORRY"; // fixed word
+
+const img = new Image();
+img.crossOrigin = "anonymous";
+img.src = imageSrc;
+
+img.onload = function(){
+    drawPortrait();
+}
+
+function drawPortrait(){
+    let width = 200;
+    let height = 200;
+    if(window.innerWidth < 600){
+        width = 100;
+        height = 100;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img,0,0,width,height);
+    const data = ctx.getImageData(0,0,width,height).data;
+
+    const portraitDiv = document.getElementById("portrait");
+    portraitDiv.innerHTML = ""; // clear old
+
+    let textIndex = 0;
+
+    for(let y=0;y<height;y++){
+        let lineHTML = "";
+        for(let x=0;x<width;x++){
+            const i = (y*width + x)*4;
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            const brightness = (r+g+b)/3;
+
+            // fill all pixels to avoid black spots
+            if(brightness < 240){ // lower threshold = darker text, higher threshold = lighter dots
+                let char = text[textIndex];
+                textIndex++;
+                if(textIndex >= text.length) textIndex = 0;
+                lineHTML += `<span style="color:rgb(${r},${g},${b})">${char}</span>`;
+            }else{
+                // light colored dot to fill gaps
+                lineHTML += `<span style="color:rgb(${r},${g},${b})">.</span>`;
+            }
+        }
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "line";
+        lineDiv.innerHTML = lineHTML;
+        portraitDiv.appendChild(lineDiv);
+    }
+}
+
+// redraw on resize for mobile/desktop
+window.addEventListener("resize", drawPortrait);
+
+// zoom with mouse wheel / pinch
+let scale = 1;
+window.addEventListener("wheel", function(e){
+    if(e.ctrlKey){ // ctrl+scroll to zoom
+        e.preventDefault();
+        scale += e.deltaY * -0.002;
+        scale = Math.min(Math.max(0.5, scale), 5); // min 0.5x, max 5x
+        document.getElementById("portrait").style.transform = `scale(${scale})`;
+    }
+},{passive:false});
+</script>
+
+</body>
+</html>
